@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  passwordHash String
+  name         String
+  role         Role              @default(USER)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  budgetAlerts BudgetAlert[]
+  budgets      Budget[]
+  auditLogs    ExpenseAuditLog[]
+  expenses     Expense[]
+  accounts     Account[]
+
+  @@map("users")
+}
+
+/// The financial ledger — append-only in spirit.
+/// Rows are never hard-deleted; soft-delete via deletedAt.
+/// Corrections create a new audit entry preserving old values.
+model Expense {
+  id           String            @id @default(uuid())
+  userId       String
+  accountId    String?
+  amount       Decimal
+  category     String
+  vendor       String
+  date         DateTime
+  description  String?
+  receiptUrl   String?
+  sourceHash   String
+  createdBy    ExpenseSource
+  aiConfidence Float?
+  deletedAt    DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  auditLogs    ExpenseAuditLog[]
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account      Account?          @relation(fields: [accountId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([sourceHash])
+  @@index([userId, date])
+  @@index([accountId])
+  @@map("expenses")
+}
+
+/// Append-only, immutable audit trail.
+/// Every write attempt (success, validation failure, duplicate flag, edit, delete) gets a row.
+model ExpenseAuditLog {
+  id               String      @id @default(uuid())
+  expenseId        String?
+  userId           String
+  action           AuditAction
+  rawAiOutput      Json?
+  previousValues   Json?
+  validationResult String
+  timestamp        DateTime    @default(now())
+  expense          Expense?    @relation(fields: [expenseId], references: [id])
+  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expenseId])
+  @@map("expense_audit_logs")
+}
+
+/// Per-category monthly budget set by the user (not AI).
+model Budget {
+  id        String   @id @default(uuid())
+  userId    String
+  accountId String?
+  category  String
+  amount    Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique(name: "userId_category_accountId", [userId, category, accountId])
+  @@index([userId])
+  @@index([accountId])
+  @@map("budgets")
+}
+
+/// Tracks when a threshold was crossed — deterministic, no AI involved in the decision.
+model BudgetAlert {
+  id          String   @id @default(uuid())
+  userId      String
+  category    String
+  threshold   Int
+  message     String?
+  triggeredAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, category])
+  @@map("budget_alerts")
+}
+
+/// User accounts for multi-context expense tracking.
+model Account {
+  id        String    @id @default(uuid())
+  userId    String
+  name      String
+  type      String   @default("BANK")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expenses  Expense[]
+  budgets   Budget[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("accounts")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ExpenseSource {
+  AI
+  MANUAL
+}
+
+enum AuditAction {
+  CREATED
+  FLAGGED_DUPLICATE
+  REJECTED
+  EDITED
+  DELETED
+}

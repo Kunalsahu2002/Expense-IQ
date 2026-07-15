@@ -1,0 +1,42 @@
+services:
+  # The Node.js Backend API
+  - type: web
+    name: expense-iq-backend
+    env: docker
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
+    plan: free
+    region: ohio
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: expense-iq-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: expense-iq-redis
+          type: pserv
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: "https://your-frontend-url.vercel.app"
+
+  # Redis instance for caching and rate limiting
+  - type: pserv
+    name: expense-iq-redis
+    env: docker
+    plan: free
+    region: ohio
+    repo: https://github.com/redis/redis
+    dockerfilePath: Dockerfile
+
+databases:
+  # PostgreSQL Database for Prisma
+  - name: expense-iq-db
+    databaseName: expense_iq
+    user: expense_iq_user
+    plan: free
+    region: ohio
