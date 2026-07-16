@@ -226,7 +226,7 @@ export default function TransactionsPage() {
                   contentStyle={{ backgroundColor: '#18181b', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}
                   itemStyle={{ color: '#ef4444', fontWeight: 500 }}
                   labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
-                  formatter={(value: number) => [`$${value.toFixed(2)}`, 'Amount']}
+                  formatter={(value: any) => [`$${Number(value).toFixed(2)}`, 'Amount']}
                 />
                 <Bar 
                   dataKey="amount" 
