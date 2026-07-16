@@ -116,6 +116,8 @@ export default function Dashboard() {
     categories: [],
     source: 'ALL',
     range: '1m', // Not used directly in fetchDashboardData yet, as timeRange drives the main query, but kept for state consistency
+    accounts: [],
+    search: '',
   });
 
   const [editingExpense, setEditingExpense] = useState<any>(null);
