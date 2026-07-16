@@ -10,3 +10,4 @@ Dockerfile
 .dockerignore
 tests/
 scripts/
+!.env.example
