@@ -6,6 +6,11 @@ Unlike naive AI wrappers that directly pipe LLM output to a database, ExpenseIQ 
 
 ![ExpenseIQ Dashboard UI](https://via.placeholder.com/1000x500?text=ExpenseIQ+Dashboard) <!-- Replace with actual screenshot -->
 
+## 🌍 Live Demo
+- **Frontend (Vercel):** [https://expense-iq-beige.vercel.app](https://expense-iq-beige.vercel.app)
+- **Backend (Render):** `https://expense-iq-387i.onrender.com`
+
+> **Note on Cold Starts:** The backend is deployed on Render's free tier. If the service hasn't been used in 15 minutes, it will spin down. The first request (like logging in or scanning a receipt) might take 30-50 seconds to wake the server up. Subsequent requests will be lightning fast!
 ## 🚀 The Architecture: "AI Proposes, Code Decides"
 
 The core engineering challenge with LLMs is their non-deterministic nature (hallucinations, formatting failures). ExpenseIQ solves this by sandboxing the AI extraction from the actual database writes.
