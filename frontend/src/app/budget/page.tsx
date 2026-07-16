@@ -57,6 +57,7 @@ export default function BudgetPage() {
       });
       setAmount('');
       fetchData();
+      window.dispatchEvent(new CustomEvent('budgets-updated'));
     } catch (err) {
       console.error('Failed to save budget', err);
     } finally {
@@ -70,6 +71,7 @@ export default function BudgetPage() {
     try {
       await api.delete(`/api/budget/${id}`);
       fetchData();
+      window.dispatchEvent(new CustomEvent('budgets-updated'));
     } catch (err) {
       console.error('Failed to delete budget', err);
     } finally {
@@ -159,12 +161,51 @@ export default function BudgetPage() {
               <div className="flex justify-center py-12">
                 <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
               </div>
-            ) : budgets.length === 0 ? (
+            ) : budgets.length === 0 && !accounts.some(a => a.totalBudget) ? (
               <div className="text-center py-12 text-muted-foreground text-sm">
                 No budgets set. Create one to start tracking.
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-6">
+                {/* Total Budgets Section */}
+                {accounts.some(a => a.totalBudget) && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Total Account Budgets</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {accounts.filter(a => a.totalBudget).map(a => (
+                        <div key={a.id} className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 transition-colors flex items-center justify-between group relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl transform translate-x-1/2 -translate-y-1/2"></div>
+                          <div className="flex items-center gap-3 relative z-10">
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/10">
+                              <Target className="w-5 h-5 text-emerald-500" />
+                            </div>
+                            <div>
+                              <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1 truncate max-w-[120px]">TOTAL BUDGET</p>
+                              <p className="text-xl font-bold text-foreground">${parseFloat(a.totalBudget).toFixed(0)}</p>
+                              <p className="text-[10px] text-muted-foreground mt-1">
+                                {a.name}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="relative z-10">
+                            <button
+                              onClick={() => router.push('/accounts')}
+                              className="text-[10px] bg-input hover:bg-black/10 dark:hover:bg-white/10 text-muted-foreground px-2 py-1 rounded transition-colors"
+                            >
+                              Edit in Accounts
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Category Budgets Section */}
+                {budgets.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Category Budgets</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {budgets.map((b) => {
                   const catDef = CATEGORIES.find(c => c.key === b.category) || CATEGORIES.find(c => c.key === 'MISCELLANEOUS')!;
                   const Icon = catDef.icon;
@@ -202,6 +243,9 @@ export default function BudgetPage() {
                     </div>
                   );
                 })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

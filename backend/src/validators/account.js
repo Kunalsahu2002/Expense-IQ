@@ -9,6 +9,8 @@ const createAccountSchema = z.object({
   type: z
     .enum(["CASH", "BANK", "CREDIT", "OTHER"])
     .default("BANK"),
+  isDefault: z.boolean().optional().default(false),
+  totalBudget: z.number().positive("Total budget must be positive").max(100_000_000, "Amount exceeds sane limit").optional().nullable(),
 });
 
 const updateAccountSchema = z.object({
@@ -21,6 +23,8 @@ const updateAccountSchema = z.object({
   type: z
     .enum(["CASH", "BANK", "CREDIT", "OTHER"])
     .optional(),
+  isDefault: z.boolean().optional(),
+  totalBudget: z.number().positive("Total budget must be positive").max(100_000_000, "Amount exceeds sane limit").optional().nullable(),
 }).refine(
   (data) => Object.keys(data).length > 0,
   { message: "At least one field must be provided for update" }

@@ -180,7 +180,14 @@ const listExpensesSchema = z.object({
   // Account filter
   accountId: z
     .string()
-    .uuid()
+    .optional()
+    .transform((val) => {
+      if (!val) return undefined;
+      return val.split(",").map(c => c.trim()).filter(Boolean);
+    }),
+
+  search: z
+    .string()
     .optional(),
 
   startDate: z

@@ -13,15 +13,15 @@ import StepProgress from '../../components/StepProgress';
 export default function ScanPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  
+
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  
+
   // The AI proposed expense data
   const [proposedData, setProposedData] = useState<any>(null);
   const [partialError, setPartialError] = useState<string>('');
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -47,14 +47,14 @@ export default function ScanPage() {
         fileInputRef.current?.click();
         return;
       }
-      
+
       // Request high resolution for better OCR
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: {
           facingMode: { ideal: 'environment' },
           width: { ideal: 1920 },
           height: { ideal: 1080 }
-        } 
+        }
       });
       setStream(mediaStream);
       setTimeout(() => {
@@ -108,14 +108,14 @@ export default function ScanPage() {
 
   const handleScan = async () => {
     if (!file) return;
-    
+
     setScanning(true);
     setPartialError('');
     setProposedData(null);
-    
+
     const formData = new FormData();
     formData.append('receipt', file);
-    
+
     try {
       const res = await api.post('/api/expenses/scan', formData, {
         headers: {
@@ -137,9 +137,9 @@ export default function ScanPage() {
 
   return (
     <div className="max-w-4xl mx-auto w-full px-6 py-8 animate-in">
-      <PageHeader 
+      <PageHeader
         title="Scan Receipt"
-        subtitle={<>Take a photo of your receipt. <br/><span className="text-emerald-600 dark:text-emerald-400 font-medium">AI proposes, you decide.</span></>}
+        subtitle={<>Take a photo of your receipt. <br /><span className="text-emerald-600 dark:text-emerald-400 font-medium">AI proposes, you decide.</span></>}
       />
 
       <StepProgress step={proposedData || scanning ? 2 : 1} label1="Capture" label2="Review" />
@@ -159,18 +159,18 @@ export default function ScanPage() {
         <div className="flex flex-col gap-6">
           <Card>
             <h2 className="text-lg font-semibold text-foreground mb-4">1. Take Photo</h2>
-            
-            <input 
-              type="file" 
-              ref={fileInputRef} 
-              onChange={handleFileChange} 
-              accept="image/*" 
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              accept="image/*"
               capture="environment"
-              className="hidden" 
+              className="hidden"
             />
 
             {!stream && !file ? (
-              <div 
+              <div
                 onClick={startCamera}
                 className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all border-border hover:border-emerald-500/30 bg-muted/30 hover:bg-input"
               >
@@ -182,21 +182,21 @@ export default function ScanPage() {
               </div>
             ) : stream ? (
               <div className="relative rounded-xl overflow-hidden bg-black aspect-[3/4] sm:aspect-video flex items-center justify-center border border-border">
-                <video 
-                  ref={videoRef} 
-                  playsInline 
-                  autoPlay 
-                  muted 
+                <video
+                  ref={videoRef}
+                  playsInline
+                  autoPlay
+                  muted
                   className="absolute inset-0 w-full h-full object-cover"
                 />
                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10">
-                  <button 
+                  <button
                     onClick={stopCamera}
                     className="p-3 rounded-full bg-black/50 text-white backdrop-blur-sm border border-white/20 hover:bg-black/70 transition-colors"
                   >
                     <X className="w-6 h-6" />
                   </button>
-                  <button 
+                  <button
                     onClick={capturePhoto}
                     className="w-14 h-14 rounded-full bg-white border-4 border-emerald-500 shadow-lg flex items-center justify-center hover:scale-105 transition-transform"
                   >
@@ -204,19 +204,19 @@ export default function ScanPage() {
                 </div>
               </div>
             ) : file && previewUrl ? (
-               <div className="border-2 border-dashed border-emerald-500/30 bg-emerald-500/5 rounded-xl p-4 flex flex-col items-center text-center relative overflow-hidden group">
+              <div className="border-2 border-dashed border-emerald-500/30 bg-emerald-500/5 rounded-xl p-4 flex flex-col items-center text-center relative overflow-hidden group">
                 <div className="absolute inset-0 w-full h-full p-2">
                   <div className="relative w-full h-full rounded-lg overflow-hidden border border-border bg-black/5">
                     <img src={previewUrl} alt="Captured receipt" className="w-full h-full object-contain" />
-                    <button 
+                    <button
                       onClick={(e) => { e.stopPropagation(); setFile(null); startCamera(); }}
                       className="absolute top-2 right-2 p-1.5 rounded-full bg-black/60 text-white hover:bg-red-500/80 backdrop-blur-sm transition-colors"
                     >
                       <X className="w-4 h-4" />
                     </button>
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 pt-8 flex items-center justify-between">
-                       <span className="text-white text-xs truncate max-w-[200px]">{file.name}</span>
-                       <span className="text-white/80 text-xs">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                      <span className="text-white text-xs truncate max-w-[200px]">{file.name}</span>
+                      <span className="text-white/80 text-xs">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
                     </div>
                   </div>
                 </div>
@@ -245,27 +245,27 @@ export default function ScanPage() {
           <Card className={`transition-all duration-500 h-full ${proposedData || scanning ? 'ring-2 ring-emerald-500/20 shadow-lg shadow-emerald-500/5 translate-y-0' : 'translate-y-4'}`}>
             <div className={`transition-all duration-500 ${proposedData || scanning ? 'opacity-100 pointer-events-auto' : 'opacity-50 pointer-events-none'}`}>
               <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                <FileText className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                </div>
+                <h2 className="text-lg font-semibold text-foreground">2. Review & Confirm</h2>
               </div>
-              <h2 className="text-lg font-semibold text-foreground">2. Review & Confirm</h2>
-            </div>
-            
-            {!proposedData ? (
-              <div className="h-64 flex flex-col items-center justify-center border border-dashed border-border rounded-xl bg-muted/20 text-center px-6">
-                <Camera className="w-10 h-10 text-muted-foreground mb-3" />
-                <p className="text-foreground font-medium">Awaiting Receipt Photo</p>
-                <p className="text-muted-foreground text-sm mt-1">
-                  Take a photo of a receipt <br/> to review the extracted data here.
-                </p>
-              </div>
-            ) : (
-              <ReviewForm 
-                initialData={proposedData} 
-                source="AI" 
-                aiConfidence={proposedData.aiConfidence || 0.95} 
-              />
-            )}
+
+              {!proposedData ? (
+                <div className="h-64 flex flex-col items-center justify-center border border-dashed border-border rounded-xl bg-muted/20 text-center px-6">
+                  <Camera className="w-10 h-10 text-muted-foreground mb-3" />
+                  <p className="text-foreground font-medium">Awaiting Receipt Photo</p>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    Take a photo of a receipt <br /> to review the extracted data here.
+                  </p>
+                </div>
+              ) : (
+                <ReviewForm
+                  initialData={proposedData}
+                  source="AI"
+                  aiConfidence={proposedData.aiConfidence || 0.95}
+                />
+              )}
             </div>
           </Card>
         </div>

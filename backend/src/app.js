@@ -39,6 +39,10 @@ app.get("/health", (req, res) => {
   });
 });
 
+// ─── Serve static files (like avatars) ───
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 // ─── API routes ───
 app.use(routes);
 

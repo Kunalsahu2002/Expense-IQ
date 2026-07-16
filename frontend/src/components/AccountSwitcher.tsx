@@ -4,6 +4,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Wallet, Briefcase, CreditCard, ChevronDown, Check, Building2, Plus, Loader2 } from 'lucide-react';
 import api from '../lib/api';
 import { useRouter } from 'next/navigation';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 export interface Account {
   id: string;
@@ -15,6 +21,7 @@ export interface Account {
 interface AccountSwitcherProps {
   activeAccountId: string | null;
   onAccountChange: (id: string | null, name: string) => void;
+  collapsed?: boolean;
 }
 
 const getAccountIcon = (type: string) => {
@@ -26,10 +33,11 @@ const getAccountIcon = (type: string) => {
   }
 };
 
-export default function AccountSwitcher({ activeAccountId, onAccountChange }: AccountSwitcherProps) {
+export default function AccountSwitcher({ activeAccountId, onAccountChange, collapsed = false }: AccountSwitcherProps) {
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
+  const initialSelectDone = useRef(false);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -37,14 +45,32 @@ export default function AccountSwitcher({ activeAccountId, onAccountChange }: Ac
     const fetchAccounts = async () => {
       try {
         const res = await api.get('/api/accounts');
-        setAccounts(res.data.data.accounts);
+        const accs = res.data.data.accounts;
+        setAccounts(accs);
+        
+        // Handle default selection on first load
+        if (!initialSelectDone.current) {
+          initialSelectDone.current = true;
+          const defaultAcc = accs.find((a: any) => a.isDefault);
+          if (defaultAcc && !activeAccountId) {
+            onAccountChange(defaultAcc.id, defaultAcc.name);
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch accounts', error);
       } finally {
         setLoading(false);
       }
     };
+
     fetchAccounts();
+
+    const handleAccountsUpdated = () => {
+      fetchAccounts();
+    };
+
+    window.addEventListener('accounts-updated', handleAccountsUpdated);
+    return () => window.removeEventListener('accounts-updated', handleAccountsUpdated);
   }, []);
 
   useEffect(() => {
@@ -69,20 +95,28 @@ export default function AccountSwitcher({ activeAccountId, onAccountChange }: Ac
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative w-full" ref={dropdownRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors bg-input hover:bg-black/5 dark:hover:bg-white/10 text-foreground border border-transparent hover:border-emerald-500/20"
+        className={cn(
+          "flex items-center gap-2 rounded-lg transition-colors bg-input hover:bg-black/5 dark:hover:bg-white/10 text-foreground border border-transparent hover:border-emerald-500/20",
+          collapsed ? "justify-center w-10 h-10 mx-auto" : "px-3 py-2 w-full justify-between"
+        )}
+        title={collapsed ? (activeAccount ? activeAccount.name : 'All Accounts') : undefined}
       >
-        <ActiveIcon className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-        <span className="text-sm font-medium truncate max-w-[120px]">
-          {activeAccount ? activeAccount.name : 'All Accounts'}
-        </span>
-        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        <div className="flex items-center gap-2">
+          <ActiveIcon className="w-4 h-4 text-emerald-500 dark:text-emerald-400 shrink-0" />
+          {!collapsed && (
+            <span className="text-sm font-medium truncate max-w-[120px]">
+              {activeAccount ? activeAccount.name : 'All Accounts'}
+            </span>
+          )}
+        </div>
+        {!collapsed && <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-56 glass-panel rounded-xl shadow-xl z-50 p-2 border-border">
+        <div className="absolute top-full left-0 mt-2 w-56 glass-panel rounded-xl shadow-xl z-50 p-2 border-border">
           <div className="max-h-64 overflow-y-auto custom-scrollbar">
             {/* All Accounts Option */}
             <button

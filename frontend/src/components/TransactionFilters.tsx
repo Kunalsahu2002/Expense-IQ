@@ -7,17 +7,22 @@ import Select from './Select';
 
 export interface FilterState {
   categories: string[];
+  accounts: string[];
   source: 'ALL' | 'AI' | 'MANUAL';
   range: string;
+  search: string;
+  customStartDate?: string;
+  customEndDate?: string;
 }
 
 interface TransactionFiltersProps {
   filters: FilterState;
   onChange: (newFilters: FilterState) => void;
   compact?: boolean;
+  accounts?: any[];
 }
 
-export default function TransactionFilters({ filters, onChange, compact = false }: TransactionFiltersProps) {
+export default function TransactionFilters({ filters, onChange, compact = false, accounts = [] }: TransactionFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -39,12 +44,19 @@ export default function TransactionFilters({ filters, onChange, compact = false 
     onChange({ ...filters, categories: newCategories });
   };
 
-  const activeCount = filters.categories.length + (filters.source !== 'ALL' ? 1 : 0);
+  const toggleAccount = (accId: string) => {
+    const newAccounts = filters.accounts.includes(accId)
+      ? filters.accounts.filter(a => a !== accId)
+      : [...filters.accounts, accId];
+    onChange({ ...filters, accounts: newAccounts });
+  };
+
+  const activeCount = filters.categories.length + filters.accounts.length + (filters.source !== 'ALL' ? 1 : 0) + (filters.customStartDate || filters.customEndDate ? 1 : 0);
 
   if (compact) {
     return (
       <div className="relative" ref={dropdownRef}>
-        <button 
+        <button
           onClick={() => setIsOpen(!isOpen)}
           className={`p-1.5 rounded-md transition-colors relative ${isOpen || activeCount > 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-input hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground'}`}
         >
@@ -57,48 +69,86 @@ export default function TransactionFilters({ filters, onChange, compact = false 
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 top-full mt-2 w-64 glass-panel rounded-xl shadow-xl z-50 p-4 border-border">
-            <h4 className="text-sm font-semibold text-foreground mb-3">Filter Transactions</h4>
-            
-            {/* Source Filter */}
-            <div className="mb-4">
-              <label className="text-xs text-muted-foreground font-medium mb-2 block">Source</label>
-              <Select
-                options={[
-                  { label: 'All Sources', value: 'ALL' },
-                  { label: 'AI Scanned', value: 'AI' },
-                  { label: 'Manual Entry', value: 'MANUAL' }
-                ]}
-                value={filters.source}
-                onChange={(val) => onChange({ ...filters, source: val as any })}
-                prefixIcon={filters.source === 'AI' ? <Sparkles className="w-3 h-3 text-emerald-500" /> : undefined}
-              />
+          <div className="absolute right-0 top-full mt-2 w-[320px] sm:w-[480px] glass-panel rounded-xl shadow-xl z-50 p-4 border-border">
+            <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
+              <h4 className="text-sm font-semibold text-foreground">Filter Transactions</h4>
+              {activeCount > 0 && (
+                <button
+                  onClick={() => onChange({ ...filters, categories: [], accounts: [], source: 'ALL', customStartDate: '', customEndDate: '' })}
+                  className="text-xs font-semibold text-red-500 hover:text-red-400 transition-colors"
+                >
+                  Clear All
+                </button>
+              )}
             </div>
 
-            {/* Category Filter */}
-            <div>
-              <label className="text-xs text-muted-foreground font-medium mb-2 block">Categories</label>
-              <div className="max-h-48 overflow-y-auto space-y-1 custom-scrollbar pr-1">
-                {CATEGORIES.map(cat => (
-                  <label key={cat.key} onClick={() => toggleCategory(cat.key)} className="flex items-center gap-2 px-2 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-md cursor-pointer transition-colors">
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${filters.categories.includes(cat.key) ? 'bg-emerald-500 border-emerald-500' : 'border-border'}`}>
-                      {filters.categories.includes(cat.key) && <Check className="w-3 h-3 text-white" />}
-                    </div>
-                    <cat.icon className="w-3 h-3" style={{ color: cat.color }} />
-                    <span className="text-sm text-foreground">{cat.label}</span>
-                  </label>
-                ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {/* Category Filter */}
+              <div>
+                <label className="text-xs text-muted-foreground font-medium mb-2 block">Categories</label>
+                <div className="max-h-48 overflow-y-auto space-y-1 custom-scrollbar pr-1">
+                  {CATEGORIES.map(cat => (
+                    <label key={cat.key} onClick={() => toggleCategory(cat.key)} className="flex items-center gap-2 px-2 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-md cursor-pointer transition-colors">
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${filters.categories.includes(cat.key) ? 'bg-emerald-500 border-emerald-500' : 'border-border'}`}>
+                        {filters.categories.includes(cat.key) && <Check className="w-3 h-3 text-white" />}
+                      </div>
+                      <cat.icon className="w-3 h-3 shrink-0" style={{ color: cat.color }} />
+                      <span className="text-sm text-foreground truncate">{cat.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column: Account, Source, Dates */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-muted-foreground font-medium mb-2 block">Accounts</label>
+                  <div className="max-h-24 overflow-y-auto space-y-1 custom-scrollbar pr-1 mb-2">
+                    {accounts.map(acc => (
+                      <label key={acc.id} onClick={() => toggleAccount(acc.id)} className="flex items-center gap-2 px-2 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-md cursor-pointer transition-colors">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${filters.accounts.includes(acc.id) ? 'bg-emerald-500 border-emerald-500' : 'border-border'}`}>
+                          {filters.accounts.includes(acc.id) && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className="text-sm text-foreground truncate">{acc.name}</span>
+                      </label>
+                    ))}
+                    {accounts.length === 0 && <span className="text-xs text-muted-foreground px-2">No accounts</span>}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs text-muted-foreground font-medium mb-2 block">Source</label>
+                  <Select
+                    options={[
+                      { label: 'All Sources', value: 'ALL' },
+                      { label: 'AI Scanned', value: 'AI' },
+                      { label: 'Manual Entry', value: 'MANUAL' }
+                    ]}
+                    value={filters.source}
+                    onChange={(val) => onChange({ ...filters, source: val as any })}
+                    prefixIcon={filters.source === 'AI' ? <Sparkles className="w-3 h-3 text-emerald-500" /> : undefined}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-muted-foreground font-medium mb-2 block">Date Range (Custom)</label>
+                  <div className="flex flex-col gap-2">
+                    <input 
+                      type="date" 
+                      className="w-full bg-input/50 border border-border text-foreground text-xs rounded-md px-2 py-1.5 focus:outline-none focus:border-emerald-500 transition-colors"
+                      value={filters.customStartDate || ''}
+                      onChange={(e) => onChange({ ...filters, customStartDate: e.target.value })}
+                    />
+                    <input 
+                      type="date" 
+                      className="w-full bg-input/50 border border-border text-foreground text-xs rounded-md px-2 py-1.5 focus:outline-none focus:border-emerald-500 transition-colors"
+                      value={filters.customEndDate || ''}
+                      onChange={(e) => onChange({ ...filters, customEndDate: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-            
-            {activeCount > 0 && (
-              <button 
-                onClick={() => onChange({ ...filters, categories: [], source: 'ALL' })}
-                className="w-full mt-3 text-xs text-red-500 hover:text-red-400 py-1.5"
-              >
-                Clear Filters
-              </button>
-            )}
           </div>
         )}
       </div>
@@ -107,44 +157,13 @@ export default function TransactionFilters({ filters, onChange, compact = false 
 
   // Full expanded mode (for Transactions page)
   return (
-    <div className="glass-panel p-4 rounded-xl mb-6 flex flex-wrap items-center gap-4 border-border">
-      <div className="flex items-center gap-2 text-foreground font-medium">
-        <Filter className="w-4 h-4" /> Filters
-      </div>
-      
-      {/* Date Range Dropdown */}
-      <div className="w-40">
-        <Select
-          options={[
-            { label: 'Last 7 Days', value: '7d' },
-            { label: 'Last 30 Days', value: '30d' },
-            { label: 'Last 3 Months', value: '3m' },
-            { label: 'Last 6 Months', value: '6m' },
-            { label: 'Last Year', value: '1y' },
-            { label: 'All Time', value: 'all' }
-          ]}
-          value={filters.range}
-          onChange={(val) => onChange({ ...filters, range: val })}
-        />
-      </div>
+    <div className="flex flex-wrap items-center gap-4 border-b border-border bg-input/20 px-6 py-3">
 
-      {/* Source Dropdown */}
-      <div className="w-40">
-        <Select
-          options={[
-            { label: 'All Sources', value: 'ALL' },
-            { label: 'AI Scanned', value: 'AI' },
-            { label: 'Manual Entry', value: 'MANUAL' }
-          ]}
-          value={filters.source}
-          onChange={(val) => onChange({ ...filters, source: val as any })}
-          prefixIcon={filters.source === 'AI' ? <Sparkles className="w-3 h-3 text-emerald-500" /> : undefined}
-        />
-      </div>
+
 
       {/* Categories Multi-Select Dropdown */}
       <div className="relative" ref={dropdownRef}>
-        <button 
+        <button
           onClick={() => setIsOpen(!isOpen)}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors border ${filters.categories.length > 0 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' : 'bg-input text-foreground border-border hover:border-emerald-500/30'}`}
         >
@@ -168,7 +187,7 @@ export default function TransactionFilters({ filters, onChange, compact = false 
       </div>
 
       {activeCount > 0 && (
-        <button 
+        <button
           onClick={() => onChange({ ...filters, categories: [], source: 'ALL' })}
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-red-500 transition-colors ml-auto px-2"
         >

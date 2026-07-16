@@ -26,7 +26,7 @@ export default function AccountsPage() {
   // Form states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<any>(null);
-  const [formData, setFormData] = useState({ name: '', type: 'BANK' });
+  const [formData, setFormData] = useState({ name: '', type: 'BANK', isDefault: false, totalBudget: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -53,10 +53,10 @@ export default function AccountsPage() {
     setError('');
     if (account) {
       setEditingAccount(account);
-      setFormData({ name: account.name, type: account.type });
+      setFormData({ name: account.name, type: account.type, isDefault: account.isDefault || false, totalBudget: account.totalBudget || '' });
     } else {
       setEditingAccount(null);
-      setFormData({ name: '', type: 'BANK' });
+      setFormData({ name: '', type: 'BANK', isDefault: false, totalBudget: '' });
     }
     setIsModalOpen(true);
   };
@@ -67,12 +67,19 @@ export default function AccountsPage() {
     setError('');
     try {
       if (editingAccount) {
-        await api.put(`/api/accounts/${editingAccount.id}`, formData);
+        await api.put(`/api/accounts/${editingAccount.id}`, {
+          ...formData,
+          totalBudget: formData.totalBudget ? parseFloat(formData.totalBudget) : null
+        });
       } else {
-        await api.post('/api/accounts', formData);
+        await api.post('/api/accounts', {
+          ...formData,
+          totalBudget: formData.totalBudget ? parseFloat(formData.totalBudget) : null
+        });
       }
       setIsModalOpen(false);
       fetchAccounts();
+      window.dispatchEvent(new Event('accounts-updated'));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to save account.');
     } finally {
@@ -96,6 +103,7 @@ export default function AccountsPage() {
     try {
       await api.delete(`/api/accounts/${accountId}`);
       fetchAccounts();
+      window.dispatchEvent(new Event('accounts-updated'));
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to delete account.');
     }
@@ -135,15 +143,28 @@ export default function AccountsPage() {
                     <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
                       <Icon className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-foreground">{account.name}</h3>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-semibold text-foreground">{account.name}</h3>
+                        {account.isDefault && (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-medium uppercase tracking-wider">Default</span>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground">{typeDef.label}</p>
                     </div>
                   </div>
                   
-                  <div className="bg-input/50 rounded-lg p-3 flex items-center justify-between mb-2">
-                    <span className="text-sm text-muted-foreground">Transactions</span>
-                    <span className="text-sm font-medium text-foreground">{account._count.expenses}</span>
+                  <div className="bg-input/50 rounded-lg p-3 flex flex-col gap-2 mb-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Transactions</span>
+                      <span className="text-sm font-medium text-foreground">{account._count.expenses}</span>
+                    </div>
+                    {account.totalBudget && (
+                      <div className="flex items-center justify-between border-t border-border/50 pt-2">
+                        <span className="text-sm text-muted-foreground">Total Budget</span>
+                        <span className="text-sm font-medium text-foreground">${parseFloat(account.totalBudget).toFixed(0)}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
@@ -205,6 +226,29 @@ export default function AccountsPage() {
                   onChange={(val) => setFormData({...formData, type: val})}
                 />
               </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground pl-1">Total Budget (Optional)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="e.g. 5000"
+                  className="w-full glass-input text-foreground rounded-lg px-3 py-2 text-sm bg-input border-border"
+                  value={formData.totalBudget}
+                  onChange={(e) => setFormData({...formData, totalBudget: e.target.value})}
+                />
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer pt-2">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-border text-emerald-500 focus:ring-emerald-500 bg-input"
+                  checked={formData.isDefault}
+                  onChange={(e) => setFormData({...formData, isDefault: e.target.checked})}
+                />
+                <span className="text-sm font-medium text-foreground">Set as default account</span>
+              </label>
 
               <div className="pt-4">
                 <button

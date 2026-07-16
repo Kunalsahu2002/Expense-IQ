@@ -75,10 +75,10 @@ router.get("/alerts", async (req, res, next) => {
 router.get("/progress", async (req, res, next) => {
   try {
     const accountId = req.query.accountId || null;
-    const progress = await budgetService.getBudgetProgress(req.user.id, accountId);
+    const { progress, totalProgress } = await budgetService.getBudgetProgress(req.user.id, accountId);
     res.status(200).json({
       message: "Budget progress retrieved successfully.",
-      data: { progress },
+      data: { progress, totalProgress },
     });
   } catch (error) {
     next(error);

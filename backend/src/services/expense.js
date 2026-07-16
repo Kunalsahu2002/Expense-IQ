@@ -240,7 +240,7 @@ async function softDeleteExpense(expenseId, userId) {
  * Excludes soft-deleted expenses.
  */
 async function listExpenses(userId, options) {
-  const { page, limit, category, source, accountId, startDate, endDate, sortBy, order } = options;
+  const { page, limit, category, source, accountId, startDate, endDate, sortBy, order, search } = options;
   const skip = (page - 1) * limit;
 
   // Build where clause — always exclude soft-deleted
@@ -257,8 +257,17 @@ async function listExpenses(userId, options) {
   }
 
   // Account filter
-  if (accountId) {
+  if (accountId && Array.isArray(accountId) && accountId.length > 0) {
+    where.accountId = { in: accountId };
+  } else if (accountId && typeof accountId === 'string') {
     where.accountId = accountId;
+  }
+
+  if (search) {
+    where.OR = [
+      { vendor: { contains: search, mode: "insensitive" } },
+      { description: { contains: search, mode: "insensitive" } },
+    ];
   }
 
   if (startDate || endDate) {

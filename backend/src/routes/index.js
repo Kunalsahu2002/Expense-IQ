@@ -7,12 +7,15 @@ const budgetRoutes = require("./budget");
 const insightsRoutes = require("./insights");
 const accountRoutes = require("./account");
 
+const userRoutes = require("./user");
+
 const router = Router();
 
 // ─── Public routes ───
 router.use("/auth", authRoutes);
 
 // ─── Protected routes (require JWT) ───
+router.use("/api/user", authenticate, userRoutes);
 router.use("/api/expenses/scan", authenticate, scanRoutes);
 router.use("/api/expenses", authenticate, expenseRoutes);
 router.use("/api/budget", authenticate, budgetRoutes);

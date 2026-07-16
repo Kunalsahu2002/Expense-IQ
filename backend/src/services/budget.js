@@ -224,7 +224,7 @@ async function getBudgetProgress(userId, accountId = null) {
     spentMap[group.category] = parseFloat(group._sum.amount?.toString() || "0");
   }
 
-  return Object.entries(categoryLimits).map(([category, limit]) => {
+  const categoryProgress = Object.entries(categoryLimits).map(([category, limit]) => {
     const spent = spentMap[category] || 0;
     return {
       category,
@@ -233,6 +233,32 @@ async function getBudgetProgress(userId, accountId = null) {
       percentUsed: Math.min(100, Math.round((spent / limit) * 100))
     };
   }).sort((a, b) => b.percentUsed - a.percentUsed);
+
+  // Total Budget logic
+  let totalProgress = null;
+  if (accountId) {
+    const acc = await prisma.account.findUnique({ where: { id: accountId } });
+    if (acc && acc.totalBudget) {
+      const limit = parseFloat(acc.totalBudget.toString());
+      const totalSpentAgg = await prisma.expense.aggregate({
+        where: {
+          userId,
+          deletedAt: null,
+          accountId,
+          date: { gte: startDate, lt: endDate }
+        },
+        _sum: { amount: true }
+      });
+      const spent = parseFloat(totalSpentAgg._sum.amount?.toString() || "0");
+      totalProgress = {
+        limit,
+        spent,
+        percentUsed: Math.min(100, Math.round((spent / limit) * 100))
+      };
+    }
+  }
+
+  return { progress: categoryProgress, totalProgress };
 }
 
 module.exports = { setBudget, getBudgets, deleteBudget, getAlerts, checkBudgetThresholds, getBudgetProgress };

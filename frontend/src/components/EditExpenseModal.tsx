@@ -9,10 +9,11 @@ interface EditExpenseModalProps {
   onClose: () => void;
   onUpdated: () => void;
   onDeleted: () => void;
+  defaultDelete?: boolean;
 }
 
-export default function EditExpenseModal({ expense, onClose, onUpdated, onDeleted }: EditExpenseModalProps) {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+export default function EditExpenseModal({ expense, onClose, onUpdated, onDeleted, defaultDelete = false }: EditExpenseModalProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(defaultDelete);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 

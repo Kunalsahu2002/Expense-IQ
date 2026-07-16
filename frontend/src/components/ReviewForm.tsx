@@ -23,6 +23,13 @@ export default function ReviewForm({ initialData, source, aiConfidence = 0, expe
   const [error, setError] = useState('');
   const [accounts, setAccounts] = useState<any[]>([]);
   
+  // Inline account creation state
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [newAccountName, setNewAccountName] = useState('');
+  const [newAccountType, setNewAccountType] = useState('BANK');
+  const [newAccountDefault, setNewAccountDefault] = useState(true);
+  const [savingAccount, setSavingAccount] = useState(false);
+  
   const [formData, setFormData] = useState({
     amount: '',
     category: 'MISCELLANEOUS',
@@ -108,6 +115,34 @@ export default function ReviewForm({ initialData, source, aiConfidence = 0, expe
     }
   };
 
+  const handleCreateAccount = async () => {
+    if (!newAccountName.trim()) return;
+    setSavingAccount(true);
+    try {
+      const res = await api.post('/api/accounts', {
+        name: newAccountName,
+        type: newAccountType,
+        isDefault: newAccountDefault
+      });
+      // trigger refetch
+      window.dispatchEvent(new Event('accounts-updated'));
+      
+      const newAccountsRes = await api.get('/api/accounts');
+      const updatedAccs = newAccountsRes.data.data.accounts;
+      setAccounts(updatedAccs);
+      
+      const createdAcc = updatedAccs.find((a: any) => a.name === newAccountName);
+      if (createdAcc) {
+        setFormData(prev => ({ ...prev, accountId: createdAcc.id }));
+      }
+      setIsCreatingAccount(false);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to create account.');
+    } finally {
+      setSavingAccount(false);
+    }
+  };
+
   const FieldLabel = ({ label, fieldName, originalValue }: { label: string, fieldName: string, originalValue: any }) => {
     const isAiExtracted = source === 'AI' && initialData && originalValue !== undefined && originalValue !== null;
     const currentValue = formData[fieldName as keyof typeof formData];
@@ -181,7 +216,7 @@ export default function ReviewForm({ initialData, source, aiConfidence = 0, expe
         />
       </div>
 
-      {accounts.length > 0 && (
+      {accounts.length > 0 ? (
         <div className="space-y-1">
           <FieldLabel label="Account" fieldName="accountId" originalValue={initialData?.accountId} />
           <Select
@@ -189,6 +224,55 @@ export default function ReviewForm({ initialData, source, aiConfidence = 0, expe
             value={formData.accountId}
             onChange={(val) => setFormData({...formData, accountId: val})}
           />
+        </div>
+      ) : (
+        <div className="space-y-2 p-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">No accounts found</span>
+            {!isCreatingAccount && (
+              <button 
+                type="button" 
+                onClick={() => setIsCreatingAccount(true)}
+                className="text-xs font-medium text-emerald-500 hover:text-emerald-600 transition-colors"
+              >
+                + Create Account
+              </button>
+            )}
+          </div>
+          
+          {isCreatingAccount ? (
+            <div className="space-y-3 pt-2">
+              <input
+                type="text"
+                placeholder="Account Name (e.g. Personal)"
+                className="w-full glass-input text-foreground rounded-lg px-3 py-2 text-sm bg-input border-border"
+                value={newAccountName}
+                onChange={(e) => setNewAccountName(e.target.value)}
+              />
+              <div className="flex gap-2">
+                <Select
+                  className="flex-1"
+                  options={[
+                    { value: 'BANK', label: 'Bank' },
+                    { value: 'CASH', label: 'Cash' },
+                    { value: 'CREDIT', label: 'Credit' }
+                  ]}
+                  value={newAccountType}
+                  onChange={setNewAccountType}
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateAccount}
+                  disabled={savingAccount || !newAccountName.trim()}
+                  className="px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors disabled:opacity-50"
+                >
+                  {savingAccount ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">You need an account to save an expense.</p>
+          )}
         </div>
       )}
 

@@ -5,7 +5,7 @@ const AppError = require("../utils/AppError");
  * Account Service — manages user accounts for multi-context expense tracking.
  */
 
-async function createAccount(userId, { name, type = "BANK" }) {
+async function createAccount(userId, { name, type = "BANK", isDefault = false, totalBudget = null }) {
   // Check for duplicate name
   const existing = await prisma.account.findUnique({
     where: { userId_name: { userId, name } },
@@ -14,8 +14,17 @@ async function createAccount(userId, { name, type = "BANK" }) {
     throw new AppError(`An account named "${name}" already exists.`, 409);
   }
 
-  return prisma.account.create({
-    data: { userId, name, type },
+  return prisma.$transaction(async (tx) => {
+    if (isDefault) {
+      await tx.account.updateMany({
+        where: { userId },
+        data: { isDefault: false },
+      });
+    }
+
+    return tx.account.create({
+      data: { userId, name, type, isDefault, totalBudget },
+    });
   });
 }
 
@@ -47,12 +56,23 @@ async function updateAccount(accountId, userId, data) {
     }
   }
 
-  return prisma.account.update({
-    where: { id: accountId },
-    data: {
-      ...(data.name && { name: data.name }),
-      ...(data.type && { type: data.type }),
-    },
+  return prisma.$transaction(async (tx) => {
+    if (data.isDefault) {
+      await tx.account.updateMany({
+        where: { userId },
+        data: { isDefault: false },
+      });
+    }
+
+    return tx.account.update({
+      where: { id: accountId },
+      data: {
+        ...(data.name && { name: data.name }),
+        ...(data.type && { type: data.type }),
+        ...(data.isDefault !== undefined && { isDefault: data.isDefault }),
+        ...(data.totalBudget !== undefined && { totalBudget: data.totalBudget }),
+      },
+    });
   });
 }
 
@@ -85,7 +105,7 @@ async function ensureDefaultAccount(userId) {
   if (existing) return existing;
 
   return prisma.account.create({
-    data: { userId, name: "Personal", type: "BANK" },
+    data: { userId, name: "Personal", type: "BANK", isDefault: true },
   });
 }
 

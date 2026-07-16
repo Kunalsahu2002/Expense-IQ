@@ -15,6 +15,7 @@ const OPTIONS = [
   { value: '3m', label: 'Last 3 Months' },
   { value: '6m', label: 'Last 6 Months' },
   { value: '1y', label: 'Last Year' },
+  { value: 'all', label: 'All Time' },
 ];
 
 export default function TimeRangeDropdown({ value, onChange }: TimeRangeDropdownProps) {

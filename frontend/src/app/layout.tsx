@@ -4,6 +4,9 @@ import './globals.css';
 import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
 import Navbar from '../components/Navbar';
+import Sidebar from '../components/Sidebar';
+import GlobalFAB from '../components/GlobalFAB';
+import AddExpenseModal from '../components/AddExpenseModal';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -19,13 +22,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen flex flex-col`}>
+      <body className={`${inter.className} h-screen flex overflow-hidden bg-background`}>
         <ThemeProvider>
           <AuthProvider>
-            <Navbar />
-            <main className="flex-1 flex flex-col pt-20">
-              {children}
-            </main>
+            <Sidebar />
+            <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+              <Navbar />
+              <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background/50">
+                {children}
+              </main>
+              <GlobalFAB />
+              <AddExpenseModal />
+            </div>
           </AuthProvider>
         </ThemeProvider>
       </body>

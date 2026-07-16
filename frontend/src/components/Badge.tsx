@@ -26,8 +26,8 @@ export default function Badge({ type, value }: BadgeProps) {
     <span 
       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] uppercase font-semibold w-fit"
       style={{ 
-        backgroundColor: `${cat.color}15`, 
-        color: cat.color 
+        backgroundColor: cat.color, 
+        color: '#ffffff' 
       }}
     >
       <Icon className="w-3 h-3" />

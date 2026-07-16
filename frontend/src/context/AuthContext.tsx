@@ -8,6 +8,9 @@ interface User {
   id: string;
   email: string;
   name: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatarUrl?: string | null;
   role: string;
 }
 
@@ -16,6 +19,7 @@ interface AuthContextType {
   loading: boolean;
   login: (token: string, userData: User) => void;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,8 +60,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     router.push('/auth');
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    if (!user) return;
+    const updated = { ...user, ...userData };
+    setUser(updated);
+    localStorage.setItem('user', JSON.stringify(updated));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
