@@ -14,7 +14,7 @@ import EditExpenseModal from '../../components/EditExpenseModal';
 import TimeRangeDropdown from '../../components/TimeRangeDropdown';
 
 
-export default function TransactionsPage() {
+function TransactionsContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -420,5 +420,13 @@ export default function TransactionsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function TransactionsPage() {
+  return (
+    <React.Suspense fallback={<div className="flex items-center justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>}>
+      <TransactionsContent />
+    </React.Suspense>
   );
 }
