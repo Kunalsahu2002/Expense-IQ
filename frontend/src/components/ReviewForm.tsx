@@ -169,6 +169,15 @@ export default function ReviewForm({ initialData, source, aiConfidence = 0, expe
         </div>
       )}
       
+      {source === 'AI' && aiConfidence > 0 && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm mb-4">
+          <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          <span className="text-foreground">
+            AI extracted this data with <span className="font-semibold text-emerald-600 dark:text-emerald-400">{Math.round(aiConfidence * 100)}%</span> confidence.
+          </span>
+        </div>
+      )}
+      
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-1">
           <FieldLabel label="Amount" fieldName="amount" originalValue={initialData?.amount} />

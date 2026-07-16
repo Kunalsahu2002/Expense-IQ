@@ -1,4 +1,6 @@
 const axios = require("axios");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
 
 const BASE_URL = "http://localhost:5000";
 
@@ -85,12 +87,26 @@ async function runTests() {
       errorData?.code === "AI_EXTRACTION_FAILED" // If key is dummy
     ) {
       console.log(`✅ Scan correctly rejected the malformed input (or failed securely). Reason: ${errorData.code}`);
+      
+      // Verify Audit Log
+      const auditLog = await prisma.expenseAuditLog.findFirst({
+        where: { eventType: "AI_EXTRACTION_FAILED" },
+        orderBy: { createdAt: "desc" }
+      });
+      
+      if (auditLog) {
+        console.log(`✅ Verified in DB: Rejection was securely logged to ExpenseAuditLog (ID: ${auditLog.id}).`);
+      } else {
+        console.error("❌ Failed to verify audit log entry in the database!");
+      }
+      
       console.log("✅ 'AI proposes, deterministic code decides' architecture verified.");
     } else {
       console.error("❌ Unexpected error during scan:", errorData || err.message);
     }
   }
 
+  await prisma.$disconnect();
   console.log("\n🎉 All tests completed.");
 }
 
