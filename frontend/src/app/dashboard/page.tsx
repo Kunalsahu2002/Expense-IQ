@@ -409,7 +409,7 @@ export default function Dashboard() {
               <>
                 {/* Left Side: Category List */}
                 <div className="w-full sm:w-2/5 flex flex-col gap-4">
-                  {categoryData.sort((a,b) => b.value - a.value).map((entry, index) => {
+                  {([...categoryData]).sort((a,b) => b.value - a.value).map((entry, index) => {
                     const catDef = CATEGORIES.find(c => c.label === entry.name);
                     const Icon = catDef ? catDef.icon : null;
                     const percent = insights?.totalSpend ? Math.round((entry.value / insights.totalSpend) * 100) : 0;

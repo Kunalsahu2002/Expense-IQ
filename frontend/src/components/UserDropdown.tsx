@@ -29,7 +29,8 @@ export default function UserDropdown({ user, onLogout, collapsed = false }: User
   }, []);
 
   const initial = user.name ? user.name.charAt(0).toUpperCase() : '?';
-  const avatarUrl = user.avatarUrl ? `http://localhost:5000${user.avatarUrl}` : null;
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const avatarUrl = user.avatarUrl ? `${API_URL}${user.avatarUrl}` : null;
 
   return (
     <div className="relative flex justify-center w-full" ref={dropdownRef}>

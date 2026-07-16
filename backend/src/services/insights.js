@@ -47,17 +47,19 @@ async function getSummaryMetrics(userId, range = '1m', accountId = null) {
     };
 
     // 1. Current period total & category breakdown
+    const dateFilter = range === 'all' ? {} : { date: { gte: startDate, lte: endDate } };
+    
     const currentPeriodExpenses = await prisma.expense.groupBy({
       by: ["category"],
       where: {
         ...baseWhere,
-        date: { gte: startDate, lte: endDate },
+        ...dateFilter
       },
       _sum: { amount: true },
     });
 
     // 2. Previous period total for comparison
-    const previousPeriodTotal = await prisma.expense.aggregate({
+    const previousPeriodTotal = range === 'all' ? { _sum: { amount: 0 } } : await prisma.expense.aggregate({
       where: {
         ...baseWhere,
         date: { gte: prevStartDate, lt: prevEndDate },

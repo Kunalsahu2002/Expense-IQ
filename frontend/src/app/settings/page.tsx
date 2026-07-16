@@ -61,8 +61,10 @@ function ProfileTab() {
   const [firstName, setFirstName] = useState(user?.firstName || user?.name?.split(' ')[0] || '');
   const [lastName, setLastName] = useState(user?.lastName || user?.name?.split(' ').slice(1).join(' ') || '');
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(
-    user?.avatarUrl ? `http://localhost:5000${user.avatarUrl}` : null
+  const [preview, setPreview] = useState<string | null>(null);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const displayAvatar = preview || (
+    user?.avatarUrl ? `${API_URL}${user.avatarUrl}` : null
   );
   
   const [isLoading, setIsLoading] = useState(false);
