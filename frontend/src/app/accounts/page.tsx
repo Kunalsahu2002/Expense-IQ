@@ -49,7 +49,7 @@ export default function AccountsPage() {
     if (user) fetchAccounts();
   }, [user]);
 
-  const handleOpenModal = (account = null) => {
+  const handleOpenModal = (account: any = null) => {
     setError('');
     if (account) {
       setEditingAccount(account);
